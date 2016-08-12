@@ -64,7 +64,11 @@ module Dentaku
           before_evaluation.call(expressions[var_name], var_name) if before_evaluation
           value =
             if !value_from_memory || always_evaluate
-              evaluate!(expressions[var_name], expressions.merge(r))
+              if value_from_memory && !(expressions.keys.include?(var_name))
+                value_from_memory
+              else
+                evaluate!(expressions[var_name], expressions.merge(r))
+              end
             elsif value_from_memory
               value_from_memory
             end
