@@ -8,13 +8,14 @@ module Dentaku
   class BulkExpressionSolver
     def initialize(expression_hash, calculator,
     evaluate_if: nil, before_evaluation: nil, after_evaluation: nil,
-    always_evaluate: false)
+    always_evaluate: false, convert_value: nil)
       self.expression_hash = expression_hash
       self.calculator = calculator
       self.evaluate_if = evaluate_if
       self.before_evaluation = before_evaluation
       self.after_evaluation = after_evaluation
       self.always_evaluate = always_evaluate
+      self.convert_value = convert_value
     end
 
     def solve!
@@ -37,7 +38,8 @@ module Dentaku
     end
 
     attr_accessor :expression_hash, :calculator,
-      :evaluate_if, :before_evaluation, :after_evaluation, :always_evaluate
+      :evaluate_if, :before_evaluation, :after_evaluation, :always_evaluate,
+      :convert_value
 
     def return_undefined_handler
       ->(*) { :undefined }
@@ -66,6 +68,8 @@ module Dentaku
             elsif value_from_memory
               value_from_memory
             end
+
+          value = convert_value.call(expressions[var_name], var_name, value) if convert_value
 
           after_evaluation.call(expressions[var_name], var_name, value) if after_evaluation
           r[var_name] = value
