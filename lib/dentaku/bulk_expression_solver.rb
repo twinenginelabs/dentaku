@@ -58,7 +58,7 @@ module Dentaku
             next
           end
 
-          return if evaluate_if && !evaluate_if.call(expressions[var_name], var_name)
+          next if evaluate_if && !evaluate_if.call(expressions[var_name], var_name)
           before_evaluation.call(expressions[var_name], var_name) if before_evaluation
           value =
             if !value_from_memory || always_evaluate
