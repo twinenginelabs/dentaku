@@ -6,9 +6,15 @@ require 'dentaku/tokenizer'
 
 module Dentaku
   class BulkExpressionSolver
-    def initialize(expression_hash, calculator)
+    def initialize(expression_hash, calculator,
+    evaluate_if: nil, before_evaluation: nil, after_evaluation: nil,
+    always_evaluate: false)
       self.expression_hash = expression_hash
       self.calculator = calculator
+      self.evaluate_if = evaluate_if
+      self.before_evaluation = before_evaluation
+      self.after_evaluation = after_evaluation
+      self.always_evaluate = always_evaluate
     end
 
     def solve!
@@ -30,7 +36,8 @@ module Dentaku
       @dep_cache ||= {}
     end
 
-    attr_accessor :expression_hash, :calculator
+    attr_accessor :expression_hash, :calculator,
+      :evaluate_if, :before_evaluation, :after_evaluation, :always_evaluate
 
     def return_undefined_handler
       ->(*) { :undefined }
@@ -51,9 +58,16 @@ module Dentaku
             next
           end
 
-          value = value_from_memory ||
-            evaluate!(expressions[var_name], expressions.merge(r))
+          return if evaluate_if && !evaluate_if.call(expressions[var_name], var_name)
+          before_evaluation.call(expressions[var_name], var_name) if before_evaluation
+          value =
+            if !value_from_memory || always_evaluate
+              evaluate!(expressions[var_name], expressions.merge(r))
+            elsif value_from_memory
+              value_from_memory
+            end
 
+          after_evaluation.call(expressions[var_name], var_name, value) if after_evaluation
           r[var_name] = value
         rescue Dentaku::UnboundVariableError, ZeroDivisionError => ex
           ex.recipient_variable = var_name
@@ -67,7 +81,7 @@ module Dentaku
     end
 
     def expression_dependencies
-      Hash[expressions.map { |var, expr| [var, calculator.dependencies(expr)] }].tap do |d|
+      Hash[expressions.map { |var, expr| [var, calculator.dependencies(expr, ignore_memory: always_evaluate)] }].tap do |d|
         d.values.each do |deps|
           unresolved = deps.reject { |ud| d.has_key?(ud) }
           unresolved.each { |u| add_dependencies(d, u) }

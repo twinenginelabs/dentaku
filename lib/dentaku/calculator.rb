@@ -38,16 +38,28 @@ module Dentaku
       end
     end
 
-    def solve!(expression_hash)
-      BulkExpressionSolver.new(expression_hash, self).solve!
+    def solve!(expression_hash,
+    evaluate_if: nil, before_evaluation: nil, after_evaluation: nil, always_evaluate: false)
+      BulkExpressionSolver.new(expression_hash, self,
+        evaluate_if: evaluate_if, before_evaluation: before_evaluation, after_evaluation: after_evaluation,
+        always_evaluate: always_evaluate).
+        solve!
     end
 
-    def solve(expression_hash, &block)
-      BulkExpressionSolver.new(expression_hash, self).solve(&block)
+    def solve(expression_hash,
+    evaluate_if: nil, before_evaluation: nil, after_evaluation: nil, always_evaluate: false, &block)
+      BulkExpressionSolver.new(expression_hash, self,
+        evaluate_if: evaluate_if, before_evaluation: before_evaluation, after_evaluation: after_evaluation,
+        always_evaluate: always_evaluate).
+        solve(&block)
     end
 
-    def dependencies(expression)
-      ast(expression).dependencies(memory)
+    def dependencies(expression, ignore_memory: false)
+      if ignore_memory
+        ast(expression).dependencies
+      else
+        ast(expression).dependencies(memory)
+      end
     end
 
     def ast(expression)
