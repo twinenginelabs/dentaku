@@ -66,6 +66,12 @@ describe Dentaku::Calculator do
       expect(calculator.dependencies("bob + dole / 3")).to eq(['bob', 'dole'])
     end
 
+    it "finds dependencies in formula arguments" do
+      allow(Dentaku).to receive(:cache_ast?) { true }
+
+      expect(calculator.dependencies("CONCAT(bob, dole)")).to eq(['bob', 'dole'])
+    end
+
     it "doesn't consider variables in memory as dependencies" do
       expect(with_memory.dependencies("apples + oranges")).to eq(['oranges'])
     end
@@ -140,6 +146,20 @@ describe Dentaku::Calculator do
       expect(result).to eq(
         more_apples: :undefined,
         more_peaches: 2
+      )
+    end
+
+    it "solves remainder of expressions when one cannot be evaluated" do
+      result = calculator.solve(
+        conditional: "IF(d != 0, ratio, 0)",
+        ratio:       "10/d",
+        d:           0,
+      )
+
+      expect(result).to eq(
+        conditional: 0,
+        ratio:       :undefined,
+        d:           0,
       )
     end
   end
@@ -365,6 +385,34 @@ describe Dentaku::Calculator do
         fruit: 'banana')
       expect(value).to eq(5)
     end
+
+    it 'handles multiple nested case statements' do
+      formula = <<-FORMULA
+      CASE fruit
+      WHEN 'apple'
+        THEN
+        CASE quantity
+        WHEN 2 THEN 3
+        END
+      WHEN 'banana'
+        THEN
+        CASE quantity
+        WHEN 1 THEN 2
+        END
+      END
+      FORMULA
+      value = calculator.evaluate(
+        formula,
+        quantity: 1,
+        fruit: 'banana')
+      expect(value).to eq(2)
+
+      value = calculator.evaluate(
+        formula,
+        quantity: 2,
+        fruit: 'apple')
+      expect(value).to eq(3)
+    end
   end
 
   describe 'math functions' do
@@ -376,6 +424,53 @@ describe Dentaku::Calculator do
           expect(calculator.evaluate("#{method}(1)")).to eq Math.send(method, 1)
         end
       end
+    end
+  end
+
+  describe 'disable_cache' do
+    before do
+      allow(Dentaku).to receive(:cache_ast?) { true }
+    end
+
+    it 'disables the AST cache' do
+      expect(calculator.disable_cache{ |c| c.cache_ast? }).to be false
+    end
+
+    it 'calculates normally' do
+      expect(calculator.disable_cache{ |c| c.evaluate("2 + 2") }).to eq(4)
+    end
+  end
+
+  describe 'clear_cache' do
+    before do
+      allow(Dentaku).to receive(:cache_ast?) { true }
+
+      calculator.ast("1+1")
+      calculator.ast("pineapples * 5")
+      calculator.ast("pi * radius ^ 2")
+
+      def calculator.ast_cache
+        @ast_cache
+      end
+    end
+
+    it 'clears all items from cache' do
+      expect(calculator.ast_cache.length).to eq 3
+      calculator.clear_cache
+      expect(calculator.ast_cache.keys).to be_empty
+    end
+
+    it 'clears one item from cache' do
+      calculator.clear_cache("1+1")
+      expect(calculator.ast_cache.keys.sort).to eq([
+        'pi * radius ^ 2',
+        'pineapples * 5',
+      ])
+    end
+
+    it 'clears items matching regex from cache' do
+      calculator.clear_cache(/^pi/)
+      expect(calculator.ast_cache.keys.sort).to eq(['1+1'])
     end
   end
 

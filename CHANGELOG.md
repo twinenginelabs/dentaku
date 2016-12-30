@@ -1,5 +1,15 @@
 # Change Log
 
+## [v2.0.10] 2016-12-30
+- fix string function initialization bug
+- fix issues with CASE statements
+- allow injecting AST cache
+
+## [v2.0.9] 2016-09-19
+- namespace tokenization errors
+- automatically coerce arguments to string functions as strings
+- selectively disable or clear AST cache
+
 ## [v2.0.8] 2016-05-10
 - numeric input validations
 - fail with gem-specific error for invalid arithmetic operands
@@ -106,6 +116,8 @@
 ## [v0.1.0] 2012-01-20
 - initial release
 
+[HEAD]:  https://github.com/rubysolo/dentaku/compare/v2.0.9...HEAD
+[v2.0.9]:  https://github.com/rubysolo/dentaku/compare/v2.0.8...v2.0.9
 [v2.0.8]:  https://github.com/rubysolo/dentaku/compare/v2.0.7...v2.0.8
 [v2.0.7]:  https://github.com/rubysolo/dentaku/compare/v2.0.6...v2.0.7
 [v2.0.6]:  https://github.com/rubysolo/dentaku/compare/v2.0.5...v2.0.6

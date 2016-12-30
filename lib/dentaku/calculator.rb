@@ -8,10 +8,11 @@ module Dentaku
   class Calculator
     attr_reader :result, :memory, :tokenizer
 
-    def initialize
+    def initialize(ast_cache={})
       clear
       @tokenizer = Tokenizer.new
-      @ast_cache = {}
+      @ast_cache = ast_cache
+      @disable_ast_cache = false
     end
 
     def add_function(name, type, body)
@@ -22,6 +23,13 @@ module Dentaku
     def add_functions(fns)
       fns.each { |(name, type, body)| add_function(name, type, body) }
       self
+    end
+
+    def disable_cache
+      @disable_ast_cache = true
+      yield(self) if block_given?
+    ensure
+      @disable_ast_cache = false
     end
 
     def evaluate(expression, data={})
@@ -65,9 +73,22 @@ module Dentaku
     def ast(expression)
       @ast_cache.fetch(expression) {
         Parser.new(tokenizer.tokenize(expression)).parse.tap do |node|
-          @ast_cache[expression] = node if Dentaku.cache_ast?
+          @ast_cache[expression] = node if cache_ast?
         end
       }
+    end
+
+    def clear_cache(pattern=:all)
+      case pattern
+      when :all
+        @ast_cache = {}
+      when String
+        @ast_cache.delete(pattern)
+      when Regexp
+        @ast_cache.delete_if { |k,_| k =~ pattern }
+      else
+        fail Dentaku::ArgumentError
+      end
     end
 
     def store(key_or_hash, value=nil)
@@ -106,6 +127,10 @@ module Dentaku
 
     def empty?
       memory.empty?
+    end
+
+    def cache_ast?
+      Dentaku.cache_ast? && !@disable_ast_cache
     end
   end
 end
