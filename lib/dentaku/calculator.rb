@@ -47,18 +47,18 @@ module Dentaku
     end
 
     def solve!(expression_hash,
-    evaluate_if: nil, before_evaluation: nil, after_evaluation: nil, always_evaluate: false, convert_value: nil)
+    evaluate_if: nil, before_evaluation: nil, after_evaluation: nil, always_evaluate: false, convert_value: nil, ignore_errors: nil)
       BulkExpressionSolver.new(expression_hash, self,
         evaluate_if: evaluate_if, before_evaluation: before_evaluation, after_evaluation: after_evaluation,
-        always_evaluate: always_evaluate, convert_value: convert_value).
+        always_evaluate: always_evaluate, convert_value: convert_value, ignore_errors: ignore_errors).
         solve!
     end
 
     def solve(expression_hash,
-    evaluate_if: nil, before_evaluation: nil, after_evaluation: nil, always_evaluate: false, convert_value: nil, &block)
+    evaluate_if: nil, before_evaluation: nil, after_evaluation: nil, always_evaluate: false, convert_value: nil, ignore_errors: nil, &block)
       BulkExpressionSolver.new(expression_hash, self,
         evaluate_if: evaluate_if, before_evaluation: before_evaluation, after_evaluation: after_evaluation,
-        always_evaluate: always_evaluate, convert_value: convert_value).
+        always_evaluate: always_evaluate, convert_value: convert_value, ignore_errors: ignore_errors).
         solve(&block)
     end
 

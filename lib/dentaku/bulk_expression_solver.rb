@@ -8,7 +8,7 @@ module Dentaku
   class BulkExpressionSolver
     def initialize(expression_hash, calculator,
     evaluate_if: nil, before_evaluation: nil, after_evaluation: nil,
-    always_evaluate: false, convert_value: nil)
+    always_evaluate: false, convert_value: nil, ignore_errors: nil)
       self.expression_hash = expression_hash
       self.calculator = calculator
       self.evaluate_if = evaluate_if
@@ -16,6 +16,7 @@ module Dentaku
       self.after_evaluation = after_evaluation
       self.always_evaluate = always_evaluate
       self.convert_value = convert_value
+      self.ignore_errors = ignore_errors
     end
 
     def solve!
@@ -39,7 +40,7 @@ module Dentaku
 
     attr_accessor :expression_hash, :calculator,
       :evaluate_if, :before_evaluation, :after_evaluation, :always_evaluate,
-      :convert_value
+      :convert_value, :ignore_errors
 
     def return_undefined_handler
       ->(*) { :undefined }
@@ -62,16 +63,25 @@ module Dentaku
 
           next if evaluate_if && !evaluate_if.call(expressions[var_name], var_name)
           before_evaluation.call(expressions[var_name], var_name) if before_evaluation
-          value =
-            if !value_from_memory || always_evaluate
-              if value_from_memory && !(expressions.keys.include?(var_name))
+
+          begin
+            value =
+              if !value_from_memory || always_evaluate
+                if value_from_memory && !(expressions.keys.include?(var_name))
+                  value_from_memory
+                else
+                  evaluate!(expressions[var_name], expressions.merge(r))
+                end
+              elsif value_from_memory
                 value_from_memory
-              else
-                evaluate!(expressions[var_name], expressions.merge(r))
               end
-            elsif value_from_memory
-              value_from_memory
+          rescue Exception => ex
+            if ignore_errors
+              next
+            else
+              raise ex
             end
+          end
 
           value = convert_value.call(expressions[var_name], var_name, value) if convert_value
 
