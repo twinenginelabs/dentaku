@@ -99,7 +99,19 @@ module Dentaku
     end
 
     def expression_dependencies
-      Hash[expressions.map { |var, expr| [var, calculator.dependencies(expr, ignore_memory: always_evaluate)] }].tap do |d|
+      dependencies = expressions.map do |var, expr|
+        begin
+          [var, calculator.dependencies(expr, ignore_memory: always_evaluate)]
+        rescue Exception => ex
+          if ignore_errors
+            nil
+          else
+            raise ex
+          end
+        end
+      end
+      dependencies.compact!
+      Hash[dependencies].tap do |d|
         d.values.each do |deps|
           unresolved = deps.reject { |ud| d.has_key?(ud) }
           unresolved.each { |u| add_dependencies(d, u) }
